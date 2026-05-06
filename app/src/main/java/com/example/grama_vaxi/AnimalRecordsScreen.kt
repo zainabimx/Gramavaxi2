@@ -1,5 +1,7 @@
 package com.example.grama_vaxi
 
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,11 +17,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.FirebaseFirestore
+import java.text.SimpleDateFormat
+import java.util.*
 
 // --- 1. DATA MODELS ---
 data class CampVaccine(
@@ -36,41 +41,62 @@ data class Animal(
     val animalType: String = "",
     val age: String = "",
     val ownerName: String = "",
-    val imageUri: String = ""
+    val imageUri: String = "",
+    val lastVaccinated: String = "Never",
+    val history: List<String> = emptyList()
 )
-// ... (keep imports and data classes the same)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimalRecordsScreen(onBackClick: () -> Unit, onEditClick: (String) -> Unit) {
+    val context = LocalContext.current
     val db = FirebaseFirestore.getInstance()
     val animalList = remember { mutableStateListOf<Animal>() }
     val globalVaccines = remember { mutableStateListOf<CampVaccine>() }
     var isLoading by remember { mutableStateOf(true) }
 
+    // 2. DATA LOADING LOGIC
     fun loadData() {
         isLoading = true
-        // Ensure collection name matches your Firestore (camps or vaccine_alerts)
         db.collection("vaccine_alerts").get().addOnSuccessListener { vaxResult ->
             globalVaccines.clear()
-            for (doc in vaxResult) {
-                globalVaccines.add(doc.toObject(CampVaccine::class.java))
-            }
+            vaxResult.forEach { globalVaccines.add(it.toObject(CampVaccine::class.java)) }
 
             db.collection("animals").get().addOnSuccessListener { animalResult ->
                 animalList.clear()
-                for (doc in animalResult) {
+                animalResult.forEach { doc ->
+                    val historyData = doc.get("history") as? List<String> ?: emptyList()
                     animalList.add(Animal(
                         id = doc.id,
                         animalName = doc.getString("animalName") ?: "",
                         animalType = doc.getString("animalType") ?: "",
                         age = doc.getString("age") ?: "",
                         ownerName = doc.getString("ownerName") ?: "",
-                        imageUri = doc.getString("imageUri") ?: ""
+                        imageUri = doc.getString("imageUri") ?: "",
+                        lastVaccinated = doc.getString("lastVaccinated") ?: "Never",
+                        history = historyData
                     ))
                 }
                 isLoading = false
             }
+        }
+    }
+
+    // 3. VACCINATION CONFIRMATION (Moves Alert to History)
+    val onVaccinateConfirm = { animalId: String, vaccineDetails: String ->
+        val today = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date())
+        val docRef = db.collection("animals").document(animalId)
+
+        db.runTransaction { transaction ->
+            val snapshot = transaction.get(docRef)
+            val currentHistory = snapshot.get("history") as? List<String> ?: emptyList()
+            val updatedHistory = currentHistory + "$vaccineDetails (Completed: $today)"
+
+            transaction.update(docRef, "lastVaccinated", today)
+            transaction.update(docRef, "history", updatedHistory)
+        }.addOnSuccessListener {
+            Toast.makeText(context, "Health Record Updated!", Toast.LENGTH_SHORT).show()
+            loadData()
         }
     }
 
@@ -89,15 +115,14 @@ fun AnimalRecordsScreen(onBackClick: () -> Unit, onEditClick: (String) -> Unit) 
             if (isLoading) {
                 Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator(color = Color(0xFF2E7D32)) }
             } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp), contentPadding = PaddingValues(bottom = 20.dp)) {
                     items(animalList) { animal ->
                         AnimalRecordCard(
                             animal = animal,
                             availableVaccines = globalVaccines,
-                            onEdit = { onEditClick(animal.id) }, // This sends the ID up to MainActivity
-                            onDelete = {
-                                db.collection("animals").document(animal.id).delete().addOnSuccessListener { loadData() }
-                            }
+                            onEdit = { onEditClick(animal.id) },
+                            onDelete = { db.collection("animals").document(animal.id).delete().addOnSuccessListener { loadData() } },
+                            onVaccinateConfirm = { details -> onVaccinateConfirm(animal.id, details) }
                         )
                     }
                 }
@@ -111,7 +136,8 @@ fun AnimalRecordCard(
     animal: Animal,
     availableVaccines: List<CampVaccine>,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onVaccinateConfirm: (String) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -120,8 +146,8 @@ fun AnimalRecordCard(
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // --- HEADER: ANIMAL PROFILE ---
             Row(verticalAlignment = Alignment.Top) {
-                // Image Box
                 Box(modifier = Modifier.size(90.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFFF0F0F0))) {
                     Image(
                         painter = rememberAsyncImagePainter(animal.imageUri),
@@ -133,8 +159,13 @@ fun AnimalRecordCard(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(animal.animalName.uppercase(), fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-                    Text("Type: ${animal.animalType}", color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text("Age: ${animal.age}", fontSize = 12.sp, color = Color.Gray)
+                    Text("${animal.animalType} • ${animal.age}", color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                        Icon(Icons.Default.Person, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Owner: ${animal.ownerName}", fontSize = 12.sp, color = Color.Gray)
+                    }
                 }
                 Row {
                     IconButton(onClick = onEdit) { Icon(Icons.Default.Edit, null, tint = Color(0xFF2196F3)) }
@@ -144,38 +175,83 @@ fun AnimalRecordCard(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-            // --- FIXED MATCHING LOGIC ---
-            // .trim() removes hidden spaces, ignoreCase=true matches "Cow" with "cow"
+            // --- ALERT SECTION: VACCINATIONS ---
             val matchingAlerts = availableVaccines.filter {
                 it.targetType.trim().equals(animal.animalType.trim(), ignoreCase = true)
             }
 
             if (matchingAlerts.isNotEmpty()) {
-                Text("HEALTH ALERTS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
                 matchingAlerts.forEach { vax ->
-                    val isHighSeverity = vax.severity.trim().equals("High", ignoreCase = true)
-                    Surface(
-                        color = if (isHighSeverity) Color(0xFFFFF1F1) else Color(0xFFE8F5E9),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    if(isHighSeverity) Icons.Default.Warning else Icons.Default.Info,
-                                    null,
-                                    tint = if(isHighSeverity) Color.Red else Color(0xFF2E7D32),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                Text(vax.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            }
-                            Text("Date: ${vax.campDate}", fontSize = 12.sp, color = Color.DarkGray)
+                    val alreadyDone = animal.history.any { it.contains(vax.title) && it.contains(vax.campDate) }
+                    if (!alreadyDone) {
+                        VaccinationAlertBox(
+                            vax = vax,
+                            onConfirm = { onVaccinateConfirm("${vax.title} (Camp: ${vax.campDate})") }
+                        )
+                    }
+                }
+            }
+
+            // --- FOOTER: MEDICAL HISTORY ---
+            if (animal.history.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                Text("DIGITAL HEALTH CARD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        .background(Color(0xFFF1F8E9), RoundedCornerShape(10.dp)).padding(8.dp)
+                ) {
+                    animal.history.reversed().forEach { record ->
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
+                            Icon(Icons.Default.Done, null, tint = Color(0xFF2E7D32), modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(record, fontSize = 12.sp)
                         }
                     }
                 }
-            } else {
-                Text("No active drives for ${animal.animalType}", fontSize = 11.sp, color = Color.LightGray)
+            }
+        }
+    }
+}
+
+@Composable
+fun VaccinationAlertBox(vax: CampVaccine, onConfirm: () -> Unit) {
+    val isHighSeverity = vax.severity.trim().equals("High", ignoreCase = true)
+
+    Surface(
+        color = if (isHighSeverity) Color(0xFFFFF1F1) else Color(0xFFE8F5E9),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(2.dp, if (isHighSeverity) Color.Red.copy(alpha = 0.5f) else Color(0xFF2E7D32).copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = if (isHighSeverity) Icons.Default.Warning else Icons.Default.Info,
+                        contentDescription = null,
+                        tint = if (isHighSeverity) Color.Red else Color(0xFF2E7D32),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "URGENT ALERT",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        color = if (isHighSeverity) Color.Red else Color(0xFF2E7D32)
+                    )
+                }
+                Text(vax.title, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
+                Text("Camp Date: ${vax.campDate}", fontSize = 12.sp, color = Color.DarkGray)
+            }
+
+            IconButton(
+                onClick = onConfirm,
+                modifier = Modifier.size(44.dp).background(Color.White, RoundedCornerShape(10.dp))
+            ) {
+                Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF2E7D32), modifier = Modifier.size(28.dp))
             }
         }
     }

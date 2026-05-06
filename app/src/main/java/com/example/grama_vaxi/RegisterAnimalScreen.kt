@@ -37,12 +37,12 @@ import java.util.Locale
 @Composable
 fun RegisterAnimalScreen(
     onBackClick: () -> Unit,
-    editAnimalId: String? = null // Receives ID from Records Screen
+    editAnimalId: String? = null // Received from Records Screen via MainActivity
 ) {
     val context = LocalContext.current
     val db = FirebaseFirestore.getInstance()
 
-    // Form State
+    // --- FORM STATE ---
     var animalName by remember { mutableStateOf("") }
     var animalType by remember { mutableStateOf("") }
     var age by remember { mutableStateOf("") }
@@ -50,7 +50,7 @@ fun RegisterAnimalScreen(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var isSaving by remember { mutableStateOf(false) }
 
-    // --- 1. PRE-FILL PREVIOUS INFO ---
+    // --- 1. DATA LOADING (EDIT MODE) ---
     LaunchedEffect(editAnimalId) {
         if (editAnimalId != null) {
             db.collection("animals").document(editAnimalId).get()
@@ -60,11 +60,13 @@ fun RegisterAnimalScreen(
                         animalType = doc.getString("animalType") ?: ""
                         age = doc.getString("age") ?: ""
                         ownerName = doc.getString("ownerName") ?: ""
-                        val uriStr = doc.getString("imageUri")
-                        if (!uriStr.isNullOrEmpty()) {
-                            selectedImageUri = Uri.parse(uriStr)
+                        doc.getString("imageUri")?.let {
+                            if (it.isNotEmpty()) selectedImageUri = Uri.parse(it)
                         }
                     }
+                }
+                .addOnFailureListener {
+                    Toast.makeText(context, "Error loading data", Toast.LENGTH_SHORT).show()
                 }
         }
     }
@@ -85,7 +87,7 @@ fun RegisterAnimalScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -99,7 +101,7 @@ fun RegisterAnimalScreen(
                 .verticalScroll(rememberScrollState())
         ) {
 
-            // Status Banner
+            // Context Banner
             Surface(
                 color = if (editAnimalId == null) Color(0xFFE8F5E9) else Color(0xFFE3F2FD),
                 shape = RoundedCornerShape(16.dp),
@@ -120,7 +122,7 @@ fun RegisterAnimalScreen(
                 }
             }
 
-            // Photo Section
+            // --- PHOTO SECTION ---
             Text("Animal Photo", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             Box(
@@ -136,52 +138,33 @@ fun RegisterAnimalScreen(
                 if (selectedImageUri != null) {
                     Image(
                         painter = rememberAsyncImagePainter(selectedImageUri),
-                        contentDescription = null,
+                        contentDescription = "Animal Photo",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.AddAPhoto, null, tint = Color(0xFF0F9D58))
-                        Text("Photo", fontSize = 11.sp, color = Color(0xFF0F9D58))
+                        Text("Add Photo", fontSize = 11.sp, color = Color(0xFF0F9D58))
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Text Inputs
-            ModernRegisterInput(
-                "Animal Name",
-                animalName,
-                { animalName = it },
-                "e.g. Ganga",
-                Icons.Default.Pets
-            )
-            ModernRegisterInput(
-                "Livestock Type",
-                animalType,
-                { animalType = it },
-                "e.g. Cow, Buffalo",
-                Icons.Default.Badge
-            )
+            // --- INPUT FIELDS ---
+            ModernRegisterInput("Animal Name", animalName, { animalName = it }, "e.g. Ganga", Icons.Default.Pets)
+            ModernRegisterInput("Livestock Type", animalType, { animalType = it }, "e.g. Cow, Buffalo", Icons.Default.Badge)
             ModernRegisterInput("Age (Years)", age, { age = it }, "e.g. 3", Icons.Default.Numbers)
-            ModernRegisterInput(
-                "Owner Name",
-                ownerName,
-                { ownerName = it },
-                "Farmer's name",
-                Icons.Default.Person
-            )
+            ModernRegisterInput("Owner Name", ownerName, { ownerName = it }, "Farmer's name", Icons.Default.Person)
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            // --- 2. SAVE OR UPDATE ACTION ---
+            // --- SAVE ACTION ---
             Button(
                 onClick = {
                     if (animalName.isBlank() || animalType.isBlank()) {
-                        Toast.makeText(context, "Please fill required fields", Toast.LENGTH_SHORT)
-                            .show()
+                        Toast.makeText(context, "Please fill required fields", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
                     isSaving = true
@@ -195,16 +178,16 @@ fun RegisterAnimalScreen(
                     )
 
                     if (editAnimalId != null) {
-                        // UPDATE PATH
+                        // UPDATE PATH: Merge updates into existing document
                         db.collection("animals").document(editAnimalId)
                             .set(animalData, SetOptions.merge())
                             .addOnSuccessListener {
-                                Toast.makeText(context, "Update Successful!", Toast.LENGTH_SHORT)
-                                    .show()
+                                isSaving = false
+                                Toast.makeText(context, "Update Successful!", Toast.LENGTH_SHORT).show()
                                 onBackClick()
                             }
                     } else {
-                        // NEW REGISTRATION PATH
+                        // NEW REGISTRATION PATH: Generate initial health schedule
                         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
                         val cal = Calendar.getInstance()
                         val registrationDate = sdf.format(cal.time)
@@ -214,17 +197,16 @@ fun RegisterAnimalScreen(
                         animalData["lastVaccinated"] = registrationDate
                         animalData["nextVaccinationDue"] = nextVaccination
                         animalData["vaccinationStatus"] = "Up-to-Date"
+
                         db.collection("animals").add(animalData).addOnSuccessListener {
-                            Toast.makeText(context, "Registration Complete!", Toast.LENGTH_SHORT)
-                                .show()
+                            isSaving = false
+                            Toast.makeText(context, "Registration Complete!", Toast.LENGTH_SHORT).show()
                             onBackClick()
                         }
                     }
                 },
                 enabled = !isSaving,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F9D58))
             ) {
@@ -232,8 +214,9 @@ fun RegisterAnimalScreen(
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
                     Text(
-                        if (editAnimalId == null) "Complete Registration" else "Save Changes",
-                        fontWeight = FontWeight.Bold
+                        text = if (editAnimalId == null) "Complete Registration" else "Save Changes",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
                     )
                 }
             }
@@ -242,7 +225,6 @@ fun RegisterAnimalScreen(
     }
 }
 
-// --- 3. REUSABLE INPUT COMPONENT (Fixes the red errors) ---
 @Composable
 fun ModernRegisterInput(
     label: String,
@@ -259,14 +241,7 @@ fun ModernRegisterInput(
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text(placeholder, fontSize = 14.sp, color = Color.LightGray) },
-            leadingIcon = {
-                Icon(
-                    icon,
-                    null,
-                    tint = Color(0xFF0F9D58),
-                    modifier = Modifier.size(20.dp)
-                )
-            },
+            leadingIcon = { Icon(icon, null, tint = Color(0xFF0F9D58), modifier = Modifier.size(20.dp)) },
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Color(0xFF0F9D58),

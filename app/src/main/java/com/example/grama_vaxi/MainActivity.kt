@@ -20,7 +20,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.work.*
@@ -31,6 +30,10 @@ import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import java.util.concurrent.TimeUnit
+import androidx.work.PeriodicWorkRequestBuilder
+
+import androidx.work.WorkManager
+// Ensure your worker class is also imported
 
 class MainActivity : ComponentActivity() {
 
@@ -68,11 +71,13 @@ class MainActivity : ComponentActivity() {
             var loggedIn by remember { mutableStateOf(auth.currentUser != null) }
             var currentScreen by remember { mutableStateOf("dashboard") }
 
-            // TRIGGER EVERY TIME THE APP OPENS
+            // --- NEW STATE FOR EDITING ---
+            var selectedAnimalId by remember { mutableStateOf<String?>(null) }
+
             LaunchedEffect(loggedIn) {
                 if (loggedIn) {
-                    setupBackgroundWork() // 12-hour cycle
-                    triggerImmediateCheck(this@MainActivity) // Immediate launch check
+                    setupBackgroundWork()
+                    triggerImmediateCheck(this@MainActivity)
                 }
             }
 
@@ -86,16 +91,32 @@ class MainActivity : ComponentActivity() {
                     if (!loggedIn) {
                         LoginScreen(onGoogleClick = { startGoogleLogin() })
                     } else {
+                        // --- UPDATED NAVIGATION LOGIC ---
                         when (currentScreen) {
                             "dashboard" -> HomeScreen(
-                                onRegisterClick = { currentScreen = "register" },
+                                onRegisterClick = {
+                                    selectedAnimalId = null // Ensure fresh form
+                                    currentScreen = "register"
+                                },
                                 onRecordsClick = { currentScreen = "records" },
                                 onVaccineClick = { currentScreen = "vaccine" },
                                 onSickClick = { currentScreen = "sick" },
                                 onProfileClick = { currentScreen = "profile" }
                             )
-                            "register" -> RegisterAnimalScreen(onBackClick = { currentScreen = "dashboard" })
-                            "records" -> AnimalRecordsScreen(onBackClick = { currentScreen = "dashboard" }, onEditClick = {})
+                            "register" -> RegisterAnimalScreen(
+                                editAnimalId = selectedAnimalId, // Pass ID to form
+                                onBackClick = {
+                                    currentScreen = "records"
+                                    selectedAnimalId = null // Clear after use
+                                }
+                            )
+                            "records" -> AnimalRecordsScreen(
+                                onBackClick = { currentScreen = "dashboard" },
+                                onEditClick = { id ->
+                                    selectedAnimalId = id // Save ID for editing
+                                    currentScreen = "register" // Redirect to form
+                                }
+                            )
                             "vaccine" -> VaccineAlertsScreen(onBackClick = { currentScreen = "dashboard" })
                             "sick" -> SickReportScreen(onBackClick = { currentScreen = "dashboard" })
                             "profile" -> ProfileScreen(onBackClick = { currentScreen = "dashboard" })
