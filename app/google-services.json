@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "6624763231",
+    "project_id": "grama-vaxi-2026",
+    "storage_bucket": "grama-vaxi-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:6624763231:android:34e086b01992332a16aaea",
+        "android_client_info": {
+          "package_name": "com.example.grama_vaxi"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "6624763231-gipnjtn5rssc55p91m7ek7ug1mkkvh36.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.grama_vaxi",
+            "certificate_hash": "6937d9b17ec8af54983855ae33bd9de6dd258fb4"
+          }
+        },
+        {
+          "client_id": "6624763231-dhuq73lc7g9lc7navfmk99fk9edrl0lp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBghmxTm9DZxbLWPwp9exzQY0naNupLko"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "6624763231-dhuq73lc7g9lc7navfmk99fk9edrl0lp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
