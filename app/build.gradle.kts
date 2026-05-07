@@ -45,8 +45,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
-
-    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.ai.client.generativeai:generativeai:0.8.0")
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
     implementation("com.google.firebase:firebase-firestore")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
