@@ -26,155 +26,469 @@ import com.google.firebase.firestore.FirebaseFirestore
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    isKannada: Boolean
 ) {
+
     val context = LocalContext.current
+
     val db = FirebaseFirestore.getInstance()
+
     val auth = FirebaseAuth.getInstance()
 
-    // Get the Unique ID of the logged-in Google User
+    // GOOGLE USER
     val user = auth.currentUser
-    val userId = user?.uid ?: "guest_user" // Fallback if not logged in
 
-    // State variables
-    var name by remember { mutableStateOf("") }
-    var village by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf(user?.email ?: "") } // Read-only from Google
-    var isLoading by remember { mutableStateOf(true) }
+    val userId =
+        user?.uid ?: "guest_user"
 
-    // ════ FETCH DATA BASED ON GOOGLE ID ════
+    // STATES
+    var name by remember {
+        mutableStateOf("")
+    }
+
+    var village by remember {
+        mutableStateOf("")
+    }
+
+    var phone by remember {
+        mutableStateOf("")
+    }
+
+    var email by remember {
+        mutableStateOf(
+            user?.email ?: ""
+        )
+    }
+
+    var isLoading by remember {
+        mutableStateOf(true)
+    }
+
+    // FETCH DATA
     LaunchedEffect(userId) {
+
         if (userId != "guest_user") {
-            db.collection("farmers").document(userId).get()
+
+            db.collection("farmers")
+                .document(userId)
+                .get()
+
                 .addOnSuccessListener { document ->
-                    if (document != null && document.exists()) {
-                        name = document.getString("name") ?: ""
-                        village = document.getString("village") ?: ""
-                        phone = document.getString("phone") ?: ""
+
+                    if (
+                        document != null
+                        && document.exists()
+                    ) {
+
+                        name =
+                            document.getString("name")
+                                ?: ""
+
+                        village =
+                            document.getString("village")
+                                ?: ""
+
+                        phone =
+                            document.getString("phone")
+                                ?: ""
                     }
+
                     isLoading = false
                 }
+
                 .addOnFailureListener {
+
                     isLoading = false
                 }
+
         } else {
+
             isLoading = false
         }
     }
 
     Scaffold(
+
         containerColor = Color(0xFFFBFDFB),
+
         topBar = {
+
             TopAppBar(
-                title = { Text("My Profile", fontWeight = FontWeight.Bold) },
+
+                title = {
+
+                    Text(
+
+                        if (isKannada)
+                            "ನನ್ನ ಪ್ರೊಫೈಲ್"
+                        else
+                            "My Profile",
+
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+                },
+
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+
+                    IconButton(
+                        onClick = onBackClick
+                    ) {
+
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back"
+                        )
                     }
                 }
             )
         }
+
     ) { paddingValues ->
+
         if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFF0F9D58))
+
+            Box(
+
+                modifier = Modifier.fillMaxSize(),
+
+                contentAlignment =
+                    Alignment.Center
+            ) {
+
+                CircularProgressIndicator(
+                    color = Color(0xFF0F9D58)
+                )
             }
+
         } else {
+
             Column(
+
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(horizontal = 20.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .verticalScroll(
+                        rememberScrollState()
+                    ),
+
+                horizontalAlignment =
+                    Alignment.CenterHorizontally
             ) {
 
-                // ════ PROFILE AVATAR ════
-                Spacer(modifier = Modifier.height(20.dp))
+                // PROFILE AVATAR
+                Spacer(
+                    modifier = Modifier.height(20.dp)
+                )
+
                 Box(
-                    modifier = Modifier.size(100.dp).clip(CircleShape).background(Color(0xFFE8F5E9)),
-                    contentAlignment = Alignment.Center
+
+                    modifier = Modifier
+                        .size(100.dp)
+
+                        .clip(CircleShape)
+
+                        .background(
+                            Color(0xFFE8F5E9)
+                        ),
+
+                    contentAlignment =
+                        Alignment.Center
                 ) {
-                    Text("👨‍🌾", fontSize = 48.sp)
+
+                    Text(
+                        "👨‍🌾",
+                        fontSize = 48.sp
+                    )
                 }
 
                 Text(
+
                     text = email,
+
                     fontSize = 14.sp,
+
                     color = Color.Gray,
-                    modifier = Modifier.padding(top = 8.dp)
+
+                    modifier = Modifier.padding(
+                        top = 8.dp
+                    )
                 )
 
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(
+                    modifier = Modifier.height(30.dp)
+                )
 
-                // ════ INPUT FIELDS ════
-                ProfileInput("Full Name", name, { name = it }, "Enter your name", Icons.Default.Person)
-                ProfileInput("Village", village, { village = it }, "Enter your village", Icons.Default.Home)
-                ProfileInput("Phone Number", phone, { phone = it }, "+91 XXXXX XXXXX", Icons.Default.Phone)
+                // INPUTS
+                ProfileInput(
 
-                Spacer(modifier = Modifier.height(40.dp))
+                    label =
+                        if (isKannada)
+                            "ಪೂರ್ಣ ಹೆಸರು"
+                        else
+                            "Full Name",
 
-                // ════ SAVE / UPDATE BUTTON ════
+                    value = name,
+
+                    onValueChange = {
+                        name = it
+                    },
+
+                    placeholder =
+                        if (isKannada)
+                            "ನಿಮ್ಮ ಹೆಸರನ್ನು ನಮೂದಿಸಿ"
+                        else
+                            "Enter your name",
+
+                    icon = Icons.Default.Person
+                )
+
+                ProfileInput(
+
+                    label =
+                        if (isKannada)
+                            "ಗ್ರಾಮ"
+                        else
+                            "Village",
+
+                    value = village,
+
+                    onValueChange = {
+                        village = it
+                    },
+
+                    placeholder =
+                        if (isKannada)
+                            "ನಿಮ್ಮ ಗ್ರಾಮದ ಹೆಸರು"
+                        else
+                            "Enter your village",
+
+                    icon = Icons.Default.Home
+                )
+
+                ProfileInput(
+
+                    label =
+                        if (isKannada)
+                            "ದೂರವಾಣಿ ಸಂಖ್ಯೆ"
+                        else
+                            "Phone Number",
+
+                    value = phone,
+
+                    onValueChange = {
+                        phone = it
+                    },
+
+                    placeholder =
+                        if (isKannada)
+                            "+91 XXXXX XXXXX"
+                        else
+                            "+91 XXXXX XXXXX",
+
+                    icon = Icons.Default.Phone
+                )
+
+                Spacer(
+                    modifier = Modifier.height(40.dp)
+                )
+
+                // SAVE BUTTON
                 Button(
-                    onClick = {
-                        if (name.isBlank() || village.isBlank() || phone.isBlank()) {
-                            Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                        } else {
-                            val farmerData = hashMapOf(
-                                "name" to name,
-                                "village" to village,
-                                "phone" to phone,
-                                "email" to email,
-                                "updatedAt" to System.currentTimeMillis()
-                            )
 
-                            db.collection("farmers").document(userId).set(farmerData)
+                    onClick = {
+
+                        if (
+                            name.isBlank()
+                            || village.isBlank()
+                            || phone.isBlank()
+                        ) {
+
+                            Toast.makeText(
+
+                                context,
+
+                                if (isKannada)
+                                    "ದಯವಿಟ್ಟು ಎಲ್ಲಾ ವಿವರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ"
+                                else
+                                    "Please fill all fields",
+
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                        } else {
+
+                            val farmerData =
+                                hashMapOf(
+
+                                    "name" to name,
+
+                                    "village" to village,
+
+                                    "phone" to phone,
+
+                                    "email" to email,
+
+                                    "updatedAt" to
+                                            System.currentTimeMillis()
+                                )
+
+                            db.collection("farmers")
+                                .document(userId)
+                                .set(farmerData)
+
                                 .addOnSuccessListener {
-                                    Toast.makeText(context, "Profile Updated Successfully!", Toast.LENGTH_SHORT).show()
+
+                                    Toast.makeText(
+
+                                        context,
+
+                                        if (isKannada)
+                                            "ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ನವೀಕರಿಸಲಾಗಿದೆ!"
+                                        else
+                                            "Profile Updated Successfully!",
+
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
+
                                 .addOnFailureListener { e ->
-                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+
+                                    Toast.makeText(
+
+                                        context,
+
+                                        if (isKannada)
+                                            "ದೋಷ: ${e.message}"
+                                        else
+                                            "Error: ${e.message}",
+
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F9D58))
+
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF0F9D58)
+                    )
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Save & Update Profile", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null
+                    )
+
+                    Spacer(
+                        modifier = Modifier.width(8.dp)
+                    )
+
+                    Text(
+
+                        if (isKannada)
+                            "ಪ್ರೊಫೈಲ್ ಉಳಿಸಿ"
+                        else
+                            "Save & Update Profile",
+
+                        fontSize = 16.sp,
+
+                        fontWeight =
+                            FontWeight.Bold
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(
+                    modifier = Modifier.height(20.dp)
+                )
             }
         }
     }
 }
 
-// ════ REUSABLE INPUT COMPONENT ════
+// INPUT COMPONENT
 @Composable
 fun ProfileInput(
+
     label: String,
+
     value: String,
+
     onValueChange: (String) -> Unit,
+
     placeholder: String,
+
     icon: ImageVector
 ) {
-    Column(modifier = Modifier.padding(bottom = 16.dp)) {
-        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.DarkGray, modifier = Modifier.padding(start = 4.dp, bottom = 4.dp))
+
+    Column(
+        modifier = Modifier.padding(bottom = 16.dp)
+    ) {
+
+        Text(
+
+            label,
+
+            fontSize = 13.sp,
+
+            fontWeight =
+                FontWeight.Bold,
+
+            color = Color.DarkGray,
+
+            modifier = Modifier.padding(
+                start = 4.dp,
+                bottom = 4.dp
+            )
+        )
+
         OutlinedTextField(
+
             value = value,
+
             onValueChange = onValueChange,
+
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(placeholder, fontSize = 14.sp, color = Color.LightGray) },
-            leadingIcon = { Icon(icon, null, tint = Color(0xFF0F9D58)) },
+
+            placeholder = {
+
+                Text(
+
+                    placeholder,
+
+                    fontSize = 14.sp,
+
+                    color = Color.LightGray
+                )
+            },
+
+            leadingIcon = {
+
+                Icon(
+                    icon,
+                    null,
+                    tint = Color(0xFF0F9D58)
+                )
+            },
+
             shape = RoundedCornerShape(12.dp),
+
             singleLine = true,
+
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF0F9D58),
-                unfocusedBorderColor = Color(0xFFE0E0E0)
+
+                focusedBorderColor =
+                    Color(0xFF0F9D58),
+
+                unfocusedBorderColor =
+                    Color(0xFFE0E0E0)
             )
         )
     }

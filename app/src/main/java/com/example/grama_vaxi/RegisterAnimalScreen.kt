@@ -37,216 +37,680 @@ import java.util.Locale
 @Composable
 fun RegisterAnimalScreen(
     onBackClick: () -> Unit,
-    editAnimalId: String? = null // Received from Records Screen via MainActivity
+    editAnimalId: String? = null,
+    isKannada: Boolean
 ) {
+
     val context = LocalContext.current
     val db = FirebaseFirestore.getInstance()
 
-    // --- FORM STATE ---
-    var animalName by remember { mutableStateOf("") }
-    var animalType by remember { mutableStateOf("") }
-    var age by remember { mutableStateOf("") }
-    var ownerName by remember { mutableStateOf("") }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    var isSaving by remember { mutableStateOf(false) }
+    // FORM STATE
+    var animalName by remember {
+        mutableStateOf("")
+    }
 
-    // --- 1. DATA LOADING (EDIT MODE) ---
+    var animalType by remember {
+        mutableStateOf("")
+    }
+
+    var age by remember {
+        mutableStateOf("")
+    }
+
+    var ownerName by remember {
+        mutableStateOf("")
+    }
+
+    var selectedImageUri by remember {
+        mutableStateOf<Uri?>(null)
+    }
+
+    var isSaving by remember {
+        mutableStateOf(false)
+    }
+
+    // EDIT MODE LOADING
     LaunchedEffect(editAnimalId) {
+
         if (editAnimalId != null) {
-            db.collection("animals").document(editAnimalId).get()
+
+            db.collection("animals")
+                .document(editAnimalId)
+                .get()
+
                 .addOnSuccessListener { doc ->
+
                     if (doc.exists()) {
-                        animalName = doc.getString("animalName") ?: ""
-                        animalType = doc.getString("animalType") ?: ""
-                        age = doc.getString("age") ?: ""
-                        ownerName = doc.getString("ownerName") ?: ""
-                        doc.getString("imageUri")?.let {
-                            if (it.isNotEmpty()) selectedImageUri = Uri.parse(it)
-                        }
+
+                        animalName =
+                            doc.getString("animalName")
+                                ?: ""
+
+                        animalType =
+                            doc.getString("animalType")
+                                ?: ""
+
+                        age =
+                            doc.getString("age")
+                                ?: ""
+
+                        ownerName =
+                            doc.getString("ownerName")
+                                ?: ""
+
+                        doc.getString("imageUri")
+                            ?.let {
+
+                                if (it.isNotEmpty()) {
+
+                                    selectedImageUri =
+                                        Uri.parse(it)
+                                }
+                            }
                     }
                 }
+
                 .addOnFailureListener {
-                    Toast.makeText(context, "Error loading data", Toast.LENGTH_SHORT).show()
+
+                    Toast.makeText(
+
+                        context,
+
+                        if (isKannada)
+                            "ಡೇಟಾ ಲೋಡ್ ದೋಷ"
+                        else
+                            "Error loading data",
+
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
         }
     }
 
-    val photoLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? -> selectedImageUri = uri }
+    val photoLauncher =
+        rememberLauncherForActivityResult(
+            contract =
+                ActivityResultContracts.GetContent()
+        ) { uri: Uri? ->
+
+            selectedImageUri = uri
+        }
 
     Scaffold(
+
         containerColor = Color(0xFFFBFDFB),
+
         topBar = {
+
             TopAppBar(
+
                 title = {
+
                     Text(
-                        if (editAnimalId == null) "New Registration" else "Update Animal Details",
-                        fontWeight = FontWeight.Bold
+
+                        if (editAnimalId == null) {
+
+                            if (isKannada)
+                                "ಹೊಸ ನೋಂದಣಿ"
+                            else
+                                "New Registration"
+
+                        } else {
+
+                            if (isKannada)
+                                "ಪ್ರಾಣಿ ವಿವರಗಳನ್ನು ನವೀಕರಿಸಿ"
+                            else
+                                "Update Animal Details"
+                        },
+
+                        fontWeight =
+                            FontWeight.Bold
                     )
                 },
+
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+
+                    IconButton(
+                        onClick = onBackClick
+                    ) {
+
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back"
+                        )
                     }
                 }
             )
         }
+
     ) { paddingValues ->
+
         Column(
+
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState())
+
         ) {
 
-            // Context Banner
+            // CONTEXT BANNER
             Surface(
-                color = if (editAnimalId == null) Color(0xFFE8F5E9) else Color(0xFFE3F2FD),
+
+                color =
+                    if (editAnimalId == null)
+                        Color(0xFFE8F5E9)
+                    else
+                        Color(0xFFE3F2FD),
+
                 shape = RoundedCornerShape(16.dp),
+
                 modifier = Modifier.padding(vertical = 16.dp)
+
             ) {
+
                 Row(
+
                     modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
-                    Text(if (editAnimalId == null) "🐄" else "✏️", fontSize = 24.sp)
-                    Spacer(modifier = Modifier.width(12.dp))
+
                     Text(
-                        if (editAnimalId == null) "Provide accurate details for better health tracking."
-                        else "Update the info below and save to refresh records.",
+
+                        if (editAnimalId == null)
+                            "🐄"
+                        else
+                            "✏️",
+
+                        fontSize = 24.sp
+                    )
+
+                    Spacer(
+                        modifier = Modifier.width(12.dp)
+                    )
+
+                    Text(
+
+                        if (editAnimalId == null) {
+
+                            if (isKannada)
+                                "ಉತ್ತಮ ಆರೋಗ್ಯ ಟ್ರ್ಯಾಕಿಂಗ್‌ಗಾಗಿ ಸರಿಯಾದ ವಿವರಗಳನ್ನು ನೀಡಿ."
+                            else
+                                "Provide accurate details for better health tracking."
+
+                        } else {
+
+                            if (isKannada)
+                                "ಮಾಹಿತಿಯನ್ನು ನವೀಕರಿಸಿ ಮತ್ತು ಉಳಿಸಿ."
+                            else
+                                "Update the info below and save to refresh records."
+                        },
+
                         fontSize = 12.sp,
+
                         color = Color.DarkGray
                     )
                 }
             }
 
-            // --- PHOTO SECTION ---
-            Text("Animal Photo", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
-            Spacer(modifier = Modifier.height(8.dp))
+            // PHOTO SECTION
+            Text(
+
+                if (isKannada)
+                    "ಪ್ರಾಣಿ ಫೋಟೋ"
+                else
+                    "Animal Photo",
+
+                fontWeight = FontWeight.Bold,
+
+                fontSize = 14.sp,
+
+                color = Color.Gray
+            )
+
+            Spacer(
+                modifier = Modifier.height(8.dp)
+            )
+
             Box(
+
                 modifier = Modifier
                     .size(120.dp)
-                    .align(Alignment.CenterHorizontally)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xFFF5F5F5))
-                    .border(1.dp, Color(0xFF0F9D58).copy(alpha = 0.3f), RoundedCornerShape(20.dp))
-                    .clickable { photoLauncher.launch("image/*") },
-                contentAlignment = Alignment.Center
-            ) {
-                if (selectedImageUri != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(selectedImageUri),
-                        contentDescription = "Animal Photo",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+
+                    .align(
+                        Alignment.CenterHorizontally
                     )
+
+                    .clip(
+                        RoundedCornerShape(20.dp)
+                    )
+
+                    .background(Color(0xFFF5F5F5))
+
+                    .border(
+                        1.dp,
+                        Color(0xFF0F9D58).copy(alpha = 0.3f),
+                        RoundedCornerShape(20.dp)
+                    )
+
+                    .clickable {
+                        photoLauncher.launch("image/*")
+                    },
+
+                contentAlignment =
+                    Alignment.Center
+            ) {
+
+                if (selectedImageUri != null) {
+
+                    Image(
+
+                        painter =
+                            rememberAsyncImagePainter(
+                                selectedImageUri
+                            ),
+
+                        contentDescription =
+                            "Animal Photo",
+
+                        modifier = Modifier.fillMaxSize(),
+
+                        contentScale =
+                            ContentScale.Crop
+                    )
+
                 } else {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.AddAPhoto, null, tint = Color(0xFF0F9D58))
-                        Text("Add Photo", fontSize = 11.sp, color = Color(0xFF0F9D58))
+
+                    Column(
+
+                        horizontalAlignment =
+                            Alignment.CenterHorizontally
+                    ) {
+
+                        Icon(
+                            Icons.Default.AddAPhoto,
+                            null,
+                            tint = Color(0xFF0F9D58)
+                        )
+
+                        Text(
+
+                            if (isKannada)
+                                "ಫೋಟೋ ಸೇರಿಸಿ"
+                            else
+                                "Add Photo",
+
+                            fontSize = 11.sp,
+
+                            color = Color(0xFF0F9D58)
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(
+                modifier = Modifier.height(24.dp)
+            )
 
-            // --- INPUT FIELDS ---
-            ModernRegisterInput("Animal Name", animalName, { animalName = it }, "e.g. Ganga", Icons.Default.Pets)
-            ModernRegisterInput("Livestock Type", animalType, { animalType = it }, "e.g. Cow, Buffalo", Icons.Default.Badge)
-            ModernRegisterInput("Age (Years)", age, { age = it }, "e.g. 3", Icons.Default.Numbers)
-            ModernRegisterInput("Owner Name", ownerName, { ownerName = it }, "Farmer's name", Icons.Default.Person)
+            // INPUT FIELDS
+            ModernRegisterInput(
 
-            Spacer(modifier = Modifier.height(30.dp))
+                label =
+                    if (isKannada)
+                        "ಪ್ರಾಣಿ ಹೆಸರು"
+                    else
+                        "Animal Name",
 
-            // --- SAVE ACTION ---
+                value = animalName,
+
+                onValueChange = {
+                    animalName = it
+                },
+
+                placeholder =
+                    if (isKannada)
+                        "ಉದಾ: ಗಂಗಾ"
+                    else
+                        "e.g. Ganga",
+
+                icon = Icons.Default.Pets
+            )
+
+            ModernRegisterInput(
+
+                label =
+                    if (isKannada)
+                        "ಪಶು ಪ್ರಕಾರ"
+                    else
+                        "Livestock Type",
+
+                value = animalType,
+
+                onValueChange = {
+                    animalType = it
+                },
+
+                placeholder =
+                    if (isKannada)
+                        "ಉದಾ: ಹಸು"
+                    else
+                        "e.g. Cow, Buffalo",
+
+                icon = Icons.Default.Badge
+            )
+
+            ModernRegisterInput(
+
+                label =
+                    if (isKannada)
+                        "ವಯಸ್ಸು (ವರ್ಷ)"
+                    else
+                        "Age (Years)",
+
+                value = age,
+
+                onValueChange = {
+                    age = it
+                },
+
+                placeholder =
+                    if (isKannada)
+                        "ಉದಾ: 3"
+                    else
+                        "e.g. 3",
+
+                icon = Icons.Default.Numbers
+            )
+
+            ModernRegisterInput(
+
+                label =
+                    if (isKannada)
+                        "ಮಾಲೀಕರ ಹೆಸರು"
+                    else
+                        "Owner Name",
+
+                value = ownerName,
+
+                onValueChange = {
+                    ownerName = it
+                },
+
+                placeholder =
+                    if (isKannada)
+                        "ರೈತರ ಹೆಸರು"
+                    else
+                        "Farmer's name",
+
+                icon = Icons.Default.Person
+            )
+
+            Spacer(
+                modifier = Modifier.height(30.dp)
+            )
+
+            // SAVE BUTTON
             Button(
+
                 onClick = {
-                    if (animalName.isBlank() || animalType.isBlank()) {
-                        Toast.makeText(context, "Please fill required fields", Toast.LENGTH_SHORT).show()
+
+                    if (
+                        animalName.isBlank()
+                        || animalType.isBlank()
+                    ) {
+
+                        Toast.makeText(
+
+                            context,
+
+                            if (isKannada)
+                                "ಅಗತ್ಯ ವಿವರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ"
+                            else
+                                "Please fill required fields",
+
+                            Toast.LENGTH_SHORT
+                        ).show()
+
                         return@Button
                     }
+
                     isSaving = true
 
-                    val animalData = hashMapOf(
-                        "animalName" to animalName,
-                        "animalType" to animalType,
-                        "age" to age,
-                        "ownerName" to ownerName,
-                        "imageUri" to (selectedImageUri?.toString() ?: "")
-                    )
+                    val animalData =
+                        hashMapOf(
+
+                            "animalName" to animalName,
+
+                            "animalType" to animalType,
+
+                            "age" to age,
+
+                            "ownerName" to ownerName,
+
+                            "imageUri" to
+                                    (
+                                            selectedImageUri
+                                                ?.toString()
+                                                ?: ""
+                                            )
+                        )
 
                     if (editAnimalId != null) {
-                        // UPDATE PATH: Merge updates into existing document
-                        db.collection("animals").document(editAnimalId)
-                            .set(animalData, SetOptions.merge())
+
+                        db.collection("animals")
+                            .document(editAnimalId)
+
+                            .set(
+                                animalData,
+                                SetOptions.merge()
+                            )
+
                             .addOnSuccessListener {
+
                                 isSaving = false
-                                Toast.makeText(context, "Update Successful!", Toast.LENGTH_SHORT).show()
+
+                                Toast.makeText(
+
+                                    context,
+
+                                    if (isKannada)
+                                        "ನವೀಕರಣ ಯಶಸ್ವಿ!"
+                                    else
+                                        "Update Successful!",
+
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
                                 onBackClick()
                             }
+
                     } else {
-                        // NEW REGISTRATION PATH: Generate initial health schedule
-                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                        val cal = Calendar.getInstance()
-                        val registrationDate = sdf.format(cal.time)
+
+                        val sdf =
+                            SimpleDateFormat(
+                                "yyyy-MM-dd",
+                                Locale.getDefault()
+                            )
+
+                        val cal =
+                            Calendar.getInstance()
+
+                        val registrationDate =
+                            sdf.format(cal.time)
+
                         cal.add(Calendar.MONTH, 6)
-                        val nextVaccination = sdf.format(cal.time)
 
-                        animalData["lastVaccinated"] = registrationDate
-                        animalData["nextVaccinationDue"] = nextVaccination
-                        animalData["vaccinationStatus"] = "Up-to-Date"
+                        val nextVaccination =
+                            sdf.format(cal.time)
 
-                        db.collection("animals").add(animalData).addOnSuccessListener {
-                            isSaving = false
-                            Toast.makeText(context, "Registration Complete!", Toast.LENGTH_SHORT).show()
-                            onBackClick()
-                        }
+                        animalData["lastVaccinated"] =
+                            registrationDate
+
+                        animalData["nextVaccinationDue"] =
+                            nextVaccination
+
+                        animalData["vaccinationStatus"] =
+                            "Up-to-Date"
+
+                        db.collection("animals")
+                            .add(animalData)
+
+                            .addOnSuccessListener {
+
+                                isSaving = false
+
+                                Toast.makeText(
+
+                                    context,
+
+                                    if (isKannada)
+                                        "ನೋಂದಣಿ ಪೂರ್ಣಗೊಂಡಿದೆ!"
+                                    else
+                                        "Registration Complete!",
+
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                onBackClick()
+                            }
                     }
                 },
+
                 enabled = !isSaving,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F9D58))
+
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF0F9D58)
+                )
             ) {
+
                 if (isSaving) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+
                 } else {
+
                     Text(
-                        text = if (editAnimalId == null) "Complete Registration" else "Save Changes",
-                        fontWeight = FontWeight.Bold,
+
+                        text =
+
+                            if (editAnimalId == null) {
+
+                                if (isKannada)
+                                    "ನೋಂದಣಿ ಪೂರ್ಣಗೊಳಿಸಿ"
+                                else
+                                    "Complete Registration"
+
+                            } else {
+
+                                if (isKannada)
+                                    "ಬದಲಾವಣೆಗಳನ್ನು ಉಳಿಸಿ"
+                                else
+                                    "Save Changes"
+                            },
+
+                        fontWeight =
+                            FontWeight.Bold,
+
                         fontSize = 16.sp
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(40.dp))
+
+            Spacer(
+                modifier = Modifier.height(40.dp)
+            )
         }
     }
 }
 
 @Composable
 fun ModernRegisterInput(
+
     label: String,
+
     value: String,
+
     onValueChange: (String) -> Unit,
+
     placeholder: String,
+
     icon: ImageVector
 ) {
-    Column(modifier = Modifier.padding(bottom = 16.dp)) {
-        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.DarkGray)
-        Spacer(modifier = Modifier.height(4.dp))
+
+    Column(
+        modifier = Modifier.padding(bottom = 16.dp)
+    ) {
+
+        Text(
+
+            label,
+
+            fontSize = 13.sp,
+
+            fontWeight =
+                FontWeight.Medium,
+
+            color = Color.DarkGray
+        )
+
+        Spacer(
+            modifier = Modifier.height(4.dp)
+        )
+
         OutlinedTextField(
+
             value = value,
+
             onValueChange = onValueChange,
+
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(placeholder, fontSize = 14.sp, color = Color.LightGray) },
-            leadingIcon = { Icon(icon, null, tint = Color(0xFF0F9D58), modifier = Modifier.size(20.dp)) },
+
+            placeholder = {
+
+                Text(
+                    placeholder,
+                    fontSize = 14.sp,
+                    color = Color.LightGray
+                )
+            },
+
+            leadingIcon = {
+
+                Icon(
+
+                    icon,
+
+                    null,
+
+                    tint = Color(0xFF0F9D58),
+
+                    modifier = Modifier.size(20.dp)
+                )
+            },
+
             shape = RoundedCornerShape(12.dp),
+
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF0F9D58),
-                unfocusedBorderColor = Color(0xFFE0E0E0)
+
+                focusedBorderColor =
+                    Color(0xFF0F9D58),
+
+                unfocusedBorderColor =
+                    Color(0xFFE0E0E0)
             ),
+
             singleLine = true
         )
     }

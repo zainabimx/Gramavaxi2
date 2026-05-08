@@ -27,7 +27,8 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SickReportScreen(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    isKannada: Boolean
 ) {
 
     val context = LocalContext.current
@@ -35,7 +36,7 @@ fun SickReportScreen(
 
     val scope = rememberCoroutineScope()
 
-    // Form States
+    // FORM STATES
     var animalType by remember {
         mutableStateOf("")
     }
@@ -56,7 +57,7 @@ fun SickReportScreen(
         mutableStateOf(false)
     }
 
-    // AI States
+    // AI STATES
     var aiAdvice by remember {
         mutableStateOf("")
     }
@@ -74,8 +75,14 @@ fun SickReportScreen(
             TopAppBar(
 
                 title = {
+
                     Text(
-                        "Health Emergency",
+
+                        if (isKannada)
+                            "ಆರೋಗ್ಯ ತುರ್ತು ಪರಿಸ್ಥಿತಿ"
+                        else
+                            "Health Emergency",
+
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -103,26 +110,36 @@ fun SickReportScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 20.dp)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(
+                    rememberScrollState()
+                )
 
         ) {
 
             if (!isSubmitted) {
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(
+                    modifier = Modifier.height(16.dp)
+                )
 
-                // Alert Banner
+                // ALERT BANNER
                 Surface(
+
                     color = Color(0xFFFFF3E0),
+
                     shape = RoundedCornerShape(16.dp),
+
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 24.dp)
                 ) {
 
                     Row(
+
                         modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+
+                        verticalAlignment =
+                            Alignment.CenterVertically
                     ) {
 
                         Text(
@@ -135,44 +152,88 @@ fun SickReportScreen(
                         )
 
                         Text(
-                            "This alerts the local vet officer instantly.",
+
+                            if (isKannada)
+                                "ಇದು ಸ್ಥಳೀಯ ಪಶುವೈದ್ಯಾಧಿಕಾರಿಗೆ ತಕ್ಷಣ ಮಾಹಿತಿ ಕಳುಹಿಸುತ್ತದೆ."
+                            else
+                                "This alerts the local vet officer instantly.",
+
                             fontSize = 12.sp,
+
                             color = Color.DarkGray
                         )
                     }
                 }
 
-                // Animal Type
+                // ANIMAL TYPE
                 SickInput(
-                    label = "Animal Type",
+
+                    label =
+
+                        if (isKannada)
+                            "ಪ್ರಾಣಿಯ ಪ್ರಕಾರ"
+                        else
+                            "Animal Type",
+
                     value = animalType,
+
                     onValueChange = {
                         animalType = it
                     },
-                    placeholder = "e.g. Goat",
+
+                    placeholder =
+
+                        if (isKannada)
+                            "ಉದಾ: ಹಸು"
+                        else
+                            "e.g. Cow",
+
                     icon = Icons.Default.Pets
                 )
 
-                // Primary Issue
+                // PRIMARY ISSUE
                 SickInput(
-                    label = "Primary Issue",
+
+                    label =
+
+                        if (isKannada)
+                            "ಮುಖ್ಯ ಸಮಸ್ಯೆ"
+                        else
+                            "Primary Issue",
+
                     value = issue,
+
                     onValueChange = {
                         issue = it
                     },
-                    placeholder = "e.g. Fever",
+
+                    placeholder =
+
+                        if (isKannada)
+                            "ಉದಾ: ಆಹಾರ ತಿನ್ನುವುದಿಲ್ಲ"
+                        else
+                            "e.g. Loss of appetite",
+
                     icon = Icons.Default.Warning
                 )
 
-                // Symptoms
+                // SYMPTOMS
                 Column(
                     modifier = Modifier.padding(bottom = 16.dp)
                 ) {
 
                     Text(
-                        "Detailed Symptoms",
+
+                        if (isKannada)
+                            "ವಿಸ್ತೃತ ಲಕ್ಷಣಗಳು"
+                        else
+                            "Detailed Symptoms",
+
                         fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
+
+                        fontWeight =
+                            FontWeight.Medium,
+
                         color = Color.DarkGray
                     )
 
@@ -189,8 +250,13 @@ fun SickReportScreen(
                             .height(120.dp),
 
                         placeholder = {
+
                             Text(
-                                "Describe behavioral changes..."
+
+                                if (isKannada)
+                                    "ಉದಾ: ಬಾಯಿಯಲ್ಲಿ ಗಾಯ, ಜ್ವರ, ಕಾಲಿನ ನೋವು..."
+                                else
+                                    "e.g. Mouth wounds, fever, foot pain..."
                             )
                         },
 
@@ -198,7 +264,7 @@ fun SickReportScreen(
                     )
                 }
 
-                // AI Advice Button
+                // AI BUTTON
                 Button(
 
                     onClick = {
@@ -206,12 +272,18 @@ fun SickReportScreen(
                         if (
                             animalType.isBlank()
                             || issue.isBlank()
-                            || symptoms.length < 10
+                            || symptoms.length < 8
                         ) {
 
                             Toast.makeText(
+
                                 context,
-                                "Please fill all details properly",
+
+                                if (isKannada)
+                                    "ದಯವಿಟ್ಟು ಎಲ್ಲಾ ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ"
+                                else
+                                    "Please enter all details",
+
                                 Toast.LENGTH_SHORT
                             ).show()
 
@@ -222,12 +294,56 @@ fun SickReportScreen(
 
                             scope.launch(Dispatchers.Main) {
 
-                                aiAdvice =
-                                    GramaVaxiAI.getEmergencyAdvice(
-                                        animal = animalType,
-                                        issue = issue,
-                                        symptoms = symptoms
-                                    )
+                                try {
+
+                                    // ✅ GET PROFESSIONAL ENGLISH ADVICE
+
+                                    val englishAdvice =
+
+                                        GramaVaxiAI
+                                            .getEmergencyAdvice(
+
+                                                animal =
+                                                    animalType,
+
+                                                issue =
+                                                    issue,
+
+                                                symptoms =
+                                                    symptoms,
+
+                                                isKannada =
+                                                    false
+                                            )
+
+                                    // ✅ TRANSLATE TO KANNADA
+
+                                    aiAdvice =
+
+                                        if (isKannada) {
+
+                                            KannadaTranslator
+                                                .translateToKannada(
+                                                    englishAdvice
+                                                )
+
+                                        } else {
+
+                                            englishAdvice
+                                        }
+
+                                } catch (e: Exception) {
+
+                                    aiAdvice =
+
+                                        if (isKannada)
+
+                                            "AI ಸಲಹೆ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ."
+
+                                        else
+
+                                            "Unable to fetch AI advice."
+                                }
 
                                 isAiLoading = false
                             }
@@ -236,7 +352,7 @@ fun SickReportScreen(
 
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp),
+                        .height(52.dp),
 
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF1565C0)
@@ -253,7 +369,12 @@ fun SickReportScreen(
                     )
 
                     Text(
-                        "Get AI Advice",
+
+                        if (isKannada)
+                            "AI ಸಲಹೆ ಪಡೆಯಿರಿ"
+                        else
+                            "Get AI Advice",
+
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -262,8 +383,9 @@ fun SickReportScreen(
                     modifier = Modifier.height(16.dp)
                 )
 
-                // AI Advice Card
+                // AI RESULT CARD
                 AnimatedVisibility(
+
                     visible =
                         aiAdvice.isNotEmpty()
                                 || isAiLoading
@@ -302,8 +424,14 @@ fun SickReportScreen(
                                 )
 
                                 Text(
-                                    "AI Smart Advice",
+
+                                    if (isKannada)
+                                        "AI ಪಶುವೈದ್ಯ ಸಲಹೆ"
+                                    else
+                                        "AI Veterinary Advice",
+
                                     fontWeight = FontWeight.Bold,
+
                                     color = Color(0xFF1565C0)
                                 )
                             }
@@ -311,6 +439,7 @@ fun SickReportScreen(
                             if (isAiLoading) {
 
                                 LinearProgressIndicator(
+
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(top = 8.dp)
@@ -319,16 +448,19 @@ fun SickReportScreen(
                             } else {
 
                                 Text(
+
                                     aiAdvice,
+
                                     fontSize = 14.sp,
-                                    modifier = Modifier.padding(top = 8.dp)
+
+                                    modifier = Modifier.padding(top = 10.dp)
                                 )
                             }
                         }
                     }
                 }
 
-                // Submit Report
+                // SUBMIT BUTTON
                 Button(
 
                     onClick = {
@@ -339,8 +471,14 @@ fun SickReportScreen(
                         ) {
 
                             Toast.makeText(
+
                                 context,
-                                "Please fill fields",
+
+                                if (isKannada)
+                                    "ದಯವಿಟ್ಟು ಎಲ್ಲಾ ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ"
+                                else
+                                    "Please fill all fields",
+
                                 Toast.LENGTH_SHORT
                             ).show()
 
@@ -355,6 +493,8 @@ fun SickReportScreen(
                                 "issue" to issue,
 
                                 "symptoms" to symptoms,
+
+                                "aiAdvice" to aiAdvice,
 
                                 "status" to "Critical",
 
@@ -379,8 +519,14 @@ fun SickReportScreen(
                                     isSubmitting = false
 
                                     Toast.makeText(
+
                                         context,
-                                        "Upload Failed",
+
+                                        if (isKannada)
+                                            "ವರದಿ ಕಳುಹಿಸಲು ವಿಫಲವಾಗಿದೆ"
+                                        else
+                                            "Failed to send report",
+
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
@@ -407,15 +553,24 @@ fun SickReportScreen(
                     } else {
 
                         Text(
-                            "SEND EMERGENCY REPORT",
+
+                            if (isKannada)
+                                "ತುರ್ತು ವರದಿ ಕಳುಹಿಸಿ"
+                            else
+                                "SEND EMERGENCY REPORT",
+
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
 
+                Spacer(
+                    modifier = Modifier.height(20.dp)
+                )
+
             } else {
 
-                // Success Screen
+                // SUCCESS SCREEN
                 Column(
 
                     modifier = Modifier
@@ -427,20 +582,43 @@ fun SickReportScreen(
                 ) {
 
                     Icon(
+
                         Icons.Default.CheckCircle,
+
                         null,
+
                         tint = Color(0xFF2E7D32),
+
                         modifier = Modifier.size(80.dp)
                     )
 
-                    Text(
-                        "Report Sent to Vet",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp
+                    Spacer(
+                        modifier = Modifier.height(12.dp)
                     )
 
                     Text(
-                        "Animal: $animalType",
+
+                        if (isKannada)
+                            "ವರದಿ ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ"
+                        else
+                            "Report Sent Successfully",
+
+                        fontWeight = FontWeight.Bold,
+
+                        fontSize = 22.sp
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(8.dp)
+                    )
+
+                    Text(
+
+                        if (isKannada)
+                            "ಪ್ರಾಣಿ: $animalType"
+                        else
+                            "Animal: $animalType",
+
                         color = Color.Gray
                     )
 
@@ -451,8 +629,14 @@ fun SickReportScreen(
                     if (aiAdvice.isNotEmpty()) {
 
                         Text(
-                            "FOLLOW AI GUIDANCE:",
+
+                            if (isKannada)
+                                "AI ಸಲಹೆ:"
+                            else
+                                "AI Advice:",
+
                             fontWeight = FontWeight.Bold,
+
                             color = Color(0xFF1565C0)
                         )
 
@@ -472,8 +656,11 @@ fun SickReportScreen(
                         ) {
 
                             Text(
+
                                 aiAdvice,
+
                                 modifier = Modifier.padding(16.dp),
+
                                 fontSize = 14.sp
                             )
                         }
@@ -492,7 +679,13 @@ fun SickReportScreen(
                             .height(50.dp)
                     ) {
 
-                        Text("Return to Dashboard")
+                        Text(
+
+                            if (isKannada)
+                                "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ"
+                            else
+                                "Return to Dashboard"
+                        )
                     }
                 }
             }
@@ -514,9 +707,13 @@ fun SickInput(
     ) {
 
         Text(
+
             label,
+
             fontSize = 13.sp,
+
             fontWeight = FontWeight.Medium,
+
             color = Color.DarkGray
         )
 

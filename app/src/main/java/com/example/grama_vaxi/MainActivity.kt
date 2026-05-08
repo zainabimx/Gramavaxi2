@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
 import androidx.work.*
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -30,10 +31,6 @@ import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import java.util.concurrent.TimeUnit
-import androidx.work.PeriodicWorkRequestBuilder
-
-import androidx.work.WorkManager
-// Ensure your worker class is also imported
 
 class MainActivity : ComponentActivity() {
 
@@ -41,85 +38,265 @@ class MainActivity : ComponentActivity() {
     private lateinit var googleClient: GoogleSignInClient
     private var loginDone: (() -> Unit)? = null
 
-    private val launcher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                firebaseLogin(account.idToken!!)
-            } catch (e: Exception) {
-                Toast.makeText(this, "Login Failed", Toast.LENGTH_SHORT).show()
+    private val launcher =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+
+            if (result.resultCode == RESULT_OK) {
+
+                val task =
+                    GoogleSignIn.getSignedInAccountFromIntent(
+                        result.data
+                    )
+
+                try {
+
+                    val account =
+                        task.getResult(
+                            ApiException::class.java
+                        )
+
+                    firebaseLogin(account.idToken!!)
+
+                } catch (e: Exception) {
+
+                    Toast.makeText(
+                        this,
+                        "Login Failed",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
+
+        // ✅ FIX TOP PURPLE/ENGLISH BAR
+        WindowCompat.setDecorFitsSystemWindows(
+            window,
+            true
+        )
+
         auth = FirebaseAuth.getInstance()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerForActivityResult(ActivityResultContracts.RequestPermission()) {}.launch(Manifest.permission.POST_NOTIFICATIONS)
+        if (
+            Build.VERSION.SDK_INT >=
+            Build.VERSION_CODES.TIRAMISU
+        ) {
+
+            registerForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) {}
+                .launch(
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
         }
 
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("6624763231-dhuq73lc7g9lc7navfmk99fk9edrl0lp.apps.googleusercontent.com")
-            .requestEmail()
-            .build()
-        googleClient = GoogleSignIn.getClient(this, gso)
+        val gso =
+            GoogleSignInOptions.Builder(
+                GoogleSignInOptions.DEFAULT_SIGN_IN
+            )
+                .requestIdToken(
+                    "6624763231-dhuq73lc7g9lc7navfmk99fk9edrl0lp.apps.googleusercontent.com"
+                )
+                .requestEmail()
+                .build()
+
+        googleClient =
+            GoogleSignIn.getClient(this, gso)
 
         setContent {
-            var loggedIn by remember { mutableStateOf(auth.currentUser != null) }
-            var currentScreen by remember { mutableStateOf("dashboard") }
 
-            // --- NEW STATE FOR EDITING ---
-            var selectedAnimalId by remember { mutableStateOf<String?>(null) }
+            var loggedIn by remember {
+                mutableStateOf(
+                    auth.currentUser != null
+                )
+            }
+
+            var currentScreen by remember {
+                mutableStateOf("dashboard")
+            }
+
+            // Kannada Toggle
+            var isKannada by remember {
+                mutableStateOf(false)
+            }
+
+            // Animal Edit State
+            var selectedAnimalId by remember {
+                mutableStateOf<String?>(null)
+            }
 
             LaunchedEffect(loggedIn) {
+
                 if (loggedIn) {
+
                     setupBackgroundWork()
-                    triggerImmediateCheck(this@MainActivity)
+
+                    triggerImmediateCheck(
+                        this@MainActivity
+                    )
                 }
             }
 
             loginDone = {
+
                 loggedIn = true
                 currentScreen = "dashboard"
             }
 
             MaterialTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
+
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color.White
+                ) {
+
+                    // ✅ REMOVED EXTRA ENGLISH/KANNADA TOP BAR
+
                     if (!loggedIn) {
-                        LoginScreen(onGoogleClick = { startGoogleLogin() })
+
+                        LoginScreen(
+                            onGoogleClick = {
+                                startGoogleLogin()
+                            }
+                        )
+
                     } else {
-                        // --- UPDATED NAVIGATION LOGIC ---
+
                         when (currentScreen) {
-                            "dashboard" -> HomeScreen(
-                                onRegisterClick = {
-                                    selectedAnimalId = null // Ensure fresh form
-                                    currentScreen = "register"
-                                },
-                                onRecordsClick = { currentScreen = "records" },
-                                onVaccineClick = { currentScreen = "vaccine" },
-                                onSickClick = { currentScreen = "sick" },
-                                onProfileClick = { currentScreen = "profile" }
-                            )
-                            "register" -> RegisterAnimalScreen(
-                                editAnimalId = selectedAnimalId, // Pass ID to form
-                                onBackClick = {
-                                    currentScreen = "records"
-                                    selectedAnimalId = null // Clear after use
-                                }
-                            )
-                            "records" -> AnimalRecordsScreen(
-                                onBackClick = { currentScreen = "dashboard" },
-                                onEditClick = { id ->
-                                    selectedAnimalId = id // Save ID for editing
-                                    currentScreen = "register" // Redirect to form
-                                }
-                            )
-                            "vaccine" -> VaccineAlertsScreen(onBackClick = { currentScreen = "dashboard" })
-                            "sick" -> SickReportScreen(onBackClick = { currentScreen = "dashboard" })
-                            "profile" -> ProfileScreen(onBackClick = { currentScreen = "dashboard" })
+
+                            "dashboard" ->
+
+                                HomeScreen(
+
+                                    onRegisterClick = {
+
+                                        currentScreen =
+                                            "register"
+                                    },
+
+                                    onRecordsClick = {
+
+                                        currentScreen =
+                                            "records"
+                                    },
+
+                                    onVaccineClick = {
+
+                                        currentScreen =
+                                            "vaccine"
+                                    },
+
+                                    onSickClick = {
+
+                                        currentScreen =
+                                            "sick"
+                                    },
+
+                                    onProfileClick = {
+
+                                        currentScreen =
+                                            "profile"
+                                    },
+
+                                    onLanguageToggle = {
+
+                                        isKannada =
+                                            !isKannada
+                                    },
+
+                                    isKannada =
+                                        isKannada
+                                )
+
+                            "register" ->
+
+                                RegisterAnimalScreen(
+
+                                    editAnimalId =
+                                        selectedAnimalId,
+
+                                    isKannada =
+                                        isKannada,
+
+                                    onBackClick = {
+
+                                        currentScreen =
+                                            "records"
+
+                                        selectedAnimalId =
+                                            null
+                                    }
+                                )
+
+                            "records" ->
+
+                                AnimalRecordsScreen(
+
+                                    onBackClick = {
+
+                                        currentScreen =
+                                            "dashboard"
+                                    },
+
+                                    onEditClick = { id ->
+
+                                        selectedAnimalId =
+                                            id
+
+                                        currentScreen =
+                                            "register"
+                                    },
+
+                                    isKannada =
+                                        isKannada
+                                )
+
+                            "vaccine" ->
+
+                                VaccineAlertsScreen(
+
+                                    onBackClick = {
+
+                                        currentScreen =
+                                            "dashboard"
+                                    },
+
+                                    isKannada =
+                                        isKannada
+                                )
+
+                            "sick" ->
+
+                                SickReportScreen(
+
+                                    onBackClick = {
+
+                                        currentScreen =
+                                            "dashboard"
+                                    },
+
+                                    isKannada =
+                                        isKannada
+                                )
+
+                            "profile" ->
+
+                                ProfileScreen(
+
+                                    onBackClick = {
+
+                                        currentScreen =
+                                            "dashboard"
+                                    },
+
+                                    isKannada =
+                                        isKannada
+                                )
                         }
                     }
                 }
@@ -128,77 +305,223 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun setupBackgroundWork() {
-        val workManager = WorkManager.getInstance(this)
-        val constraints = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
-        val periodicRequest = PeriodicWorkRequestBuilder<VaccineNotificationWorker>(12, TimeUnit.HOURS)
-            .setConstraints(constraints).build()
 
-        workManager.enqueueUniquePeriodicWork("VaccineAlertCheck", ExistingPeriodicWorkPolicy.KEEP, periodicRequest)
+        val workManager =
+            WorkManager.getInstance(this)
+
+        val constraints =
+            Constraints.Builder()
+                .setRequiredNetworkType(
+                    NetworkType.CONNECTED
+                )
+                .build()
+
+        val periodicRequest =
+            PeriodicWorkRequestBuilder<VaccineNotificationWorker>(
+                12,
+                TimeUnit.HOURS
+            )
+                .setConstraints(constraints)
+                .build()
+
+        workManager.enqueueUniquePeriodicWork(
+
+            "VaccineAlertCheck",
+
+            ExistingPeriodicWorkPolicy.KEEP,
+
+            periodicRequest
+        )
     }
 
-    private fun triggerImmediateCheck(context: Context) {
-        val immediateRequest = OneTimeWorkRequestBuilder<VaccineNotificationWorker>()
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .build()
-        WorkManager.getInstance(context).enqueue(immediateRequest)
+    private fun triggerImmediateCheck(
+        context: Context
+    ) {
+
+        val immediateRequest =
+            OneTimeWorkRequestBuilder<VaccineNotificationWorker>()
+                .setExpedited(
+                    OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST
+                )
+                .build()
+
+        WorkManager
+            .getInstance(context)
+            .enqueue(immediateRequest)
     }
 
-    private fun startGoogleLogin() { launcher.launch(googleClient.signInIntent) }
+    private fun startGoogleLogin() {
+
+        launcher.launch(
+            googleClient.signInIntent
+        )
+    }
 
     private fun firebaseLogin(token: String) {
-        val credential = GoogleAuthProvider.getCredential(token, null)
-        auth.signInWithCredential(credential).addOnCompleteListener { task ->
-            if (task.isSuccessful) { loginDone?.invoke() }
-        }
+
+        val credential =
+            GoogleAuthProvider.getCredential(
+                token,
+                null
+            )
+
+        auth.signInWithCredential(credential)
+
+            .addOnCompleteListener { task ->
+
+                if (task.isSuccessful) {
+
+                    loginDone?.invoke()
+                }
+            }
     }
 }
 
 @Composable
-fun LoginScreen(onGoogleClick: () -> Unit) {
+fun LoginScreen(
+    onGoogleClick: () -> Unit
+) {
+
     Box(
+
         modifier = Modifier
             .fillMaxSize()
+
             .background(
+
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF1B5E20), Color(0xFF4CAF50), Color(0xFFF1F8E9))
+
+                    colors = listOf(
+
+                        Color(0xFF1B5E20),
+
+                        Color(0xFF4CAF50),
+
+                        Color(0xFFF1F8E9)
+                    )
                 )
             )
     ) {
+
         Column(
-            modifier = Modifier.fillMaxSize().padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+
+            horizontalAlignment =
+                Alignment.CenterHorizontally,
+
+            verticalArrangement =
+                Arrangement.Center
         ) {
+
             Box(
-                modifier = Modifier.size(130.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
+
+                modifier = Modifier
+                    .size(130.dp)
+
+                    .clip(CircleShape)
+
+                    .background(
+                        Color.White.copy(alpha = 0.2f)
+                    ),
+
+                contentAlignment =
+                    Alignment.Center
             ) {
-                Text("🐄", fontSize = 64.sp)
+
+                Text(
+                    "🐄",
+                    fontSize = 64.sp
+                )
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
-            Text("Grama-Vaxi", color = Color.White, fontSize = 40.sp, fontWeight = FontWeight.ExtraBold)
-            Text("Smart Livestock Management", color = Color.White.copy(alpha = 0.9f), fontSize = 16.sp)
+            Spacer(
+                modifier = Modifier.height(28.dp)
+            )
 
-            Spacer(modifier = Modifier.height(64.dp))
+            Text(
+
+                "Grama-Vaxi",
+
+                color = Color.White,
+
+                fontSize = 40.sp,
+
+                fontWeight =
+                    FontWeight.ExtraBold
+            )
+
+            Text(
+
+                "Smart Livestock Management",
+
+                color = Color.White.copy(alpha = 0.9f),
+
+                fontSize = 16.sp
+            )
+
+            Spacer(
+                modifier = Modifier.height(64.dp)
+            )
 
             Card(
-                modifier = Modifier.fillMaxWidth().height(60.dp),
+
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
+
                 shape = RoundedCornerShape(30.dp),
-                elevation = CardDefaults.cardElevation(10.dp),
+
+                elevation =
+                    CardDefaults.cardElevation(10.dp),
+
                 onClick = onGoogleClick
             ) {
+
                 Row(
-                    modifier = Modifier.fillMaxSize().background(Color.White),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
+
+                    verticalAlignment =
+                        Alignment.CenterVertically,
+
+                    horizontalArrangement =
+                        Arrangement.Center
                 ) {
-                    Text("Continue with Google", color = Color(0xFF1B5E20), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+
+                    Text(
+
+                        "Continue with Google",
+
+                        color = Color(0xFF1B5E20),
+
+                        fontWeight =
+                            FontWeight.Bold,
+
+                        fontSize = 18.sp
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-            Text("Secure access for verified farmers", color = Color(0xFF2E7D32), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Spacer(
+                modifier = Modifier.height(24.dp)
+            )
+
+            Text(
+
+                "Secure access for verified farmers",
+
+                color = Color(0xFF2E7D32),
+
+                fontSize = 12.sp,
+
+                fontWeight =
+                    FontWeight.Bold
+            )
         }
     }
 }
