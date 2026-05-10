@@ -36,7 +36,6 @@ fun ProfileScreen(
 
     val auth = FirebaseAuth.getInstance()
 
-    // GOOGLE USER
     val user = auth.currentUser
 
     val userId =
@@ -61,12 +60,21 @@ fun ProfileScreen(
         )
     }
 
+    // TRANSLATED STATES
+    var translatedName by remember {
+        mutableStateOf("")
+    }
+
+    var translatedVillage by remember {
+        mutableStateOf("")
+    }
+
     var isLoading by remember {
         mutableStateOf(true)
     }
 
     // FETCH DATA
-    LaunchedEffect(userId) {
+    LaunchedEffect(userId, isKannada) {
 
         if (userId != "guest_user") {
 
@@ -92,6 +100,24 @@ fun ProfileScreen(
                         phone =
                             document.getString("phone")
                                 ?: ""
+
+                        // TRANSLATE TO KANNADA
+                        if (isKannada) {
+
+                            translatedName =
+                                name
+
+                            translatedVillage =
+                                village
+
+                        } else {
+
+                            translatedName =
+                                name
+
+                            translatedVillage =
+                                village
+                        }
                     }
 
                     isLoading = false
@@ -105,6 +131,27 @@ fun ProfileScreen(
         } else {
 
             isLoading = false
+        }
+    }
+
+    // TRANSLATION EFFECT
+    LaunchedEffect(isKannada, name, village) {
+
+        if (isKannada) {
+
+            translatedName =
+                KannadaTranslator
+                    .translateToKannada(name)
+
+            translatedVillage =
+                KannadaTranslator
+                    .translateToKannada(village)
+
+        } else {
+
+            translatedName = name
+
+            translatedVillage = village
         }
     }
 
@@ -178,11 +225,11 @@ fun ProfileScreen(
                     Alignment.CenterHorizontally
             ) {
 
-                // PROFILE AVATAR
                 Spacer(
                     modifier = Modifier.height(20.dp)
                 )
 
+                // PROFILE AVATAR
                 Box(
 
                     modifier = Modifier
@@ -221,7 +268,7 @@ fun ProfileScreen(
                     modifier = Modifier.height(30.dp)
                 )
 
-                // INPUTS
+                // NAME
                 ProfileInput(
 
                     label =
@@ -230,7 +277,11 @@ fun ProfileScreen(
                         else
                             "Full Name",
 
-                    value = name,
+                    value =
+                        if (isKannada)
+                            translatedName
+                        else
+                            name,
 
                     onValueChange = {
                         name = it
@@ -245,6 +296,7 @@ fun ProfileScreen(
                     icon = Icons.Default.Person
                 )
 
+                // VILLAGE
                 ProfileInput(
 
                     label =
@@ -253,7 +305,11 @@ fun ProfileScreen(
                         else
                             "Village",
 
-                    value = village,
+                    value =
+                        if (isKannada)
+                            translatedVillage
+                        else
+                            village,
 
                     onValueChange = {
                         village = it
@@ -268,6 +324,7 @@ fun ProfileScreen(
                     icon = Icons.Default.Home
                 )
 
+                // PHONE
                 ProfileInput(
 
                     label =
@@ -283,10 +340,7 @@ fun ProfileScreen(
                     },
 
                     placeholder =
-                        if (isKannada)
-                            "+91 XXXXX XXXXX"
-                        else
-                            "+91 XXXXX XXXXX",
+                        "+91 XXXXX XXXXX",
 
                     icon = Icons.Default.Phone
                 )

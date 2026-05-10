@@ -12,7 +12,8 @@ import org.json.JSONObject
 object KannadaTranslator {
 
     private const val API_KEY =
-"API_KEY"
+        "TRANS"
+
     private val client =
         OkHttpClient()
 
@@ -26,49 +27,24 @@ object KannadaTranslator {
 
                 val json = JSONObject()
 
-                // ✅ Better translation model
                 json.put(
-                    "model",
-                    "openai/gpt-3.5-turbo"
+                    "q",
+                    text
                 )
-
-                val messages =
-                    JSONArray()
-
-                val message =
-                    JSONObject()
-
-                message.put(
-                    "role",
-                    "user"
-                )
-
-                // ✅ Strong translation prompt
-                message.put(
-                    "content",
-                    """
-                    You are a professional Kannada translator.
-
-                    Translate the following English text into pure Kannada.
-
-                    STRICT RULES:
-                    - Return ONLY Kannada translation
-                    - No English words
-                    - No explanation
-                    - No quotes
-                    - No extra formatting
-                    - Keep the meaning accurate
-
-                    English Text:
-                    $text
-                    """.trimIndent()
-                )
-
-                messages.put(message)
 
                 json.put(
-                    "messages",
-                    messages
+                    "target",
+                    "kn"
+                )
+
+                json.put(
+                    "source",
+                    "en"
+                )
+
+                json.put(
+                    "format",
+                    "text"
                 )
 
                 val body =
@@ -82,26 +58,15 @@ object KannadaTranslator {
                     Request.Builder()
 
                         .url(
-                            "https://openrouter.ai/api/v1/chat/completions"
-                        )
-
-                        .addHeader(
-                            "Authorization",
-                            "Bearer $API_KEY"
-                        )
-
-                        // ✅ Important OpenRouter headers
-                        .addHeader(
-                            "HTTP-Referer",
-                            "https://gramavaxi.app"
-                        )
-
-                        .addHeader(
-                            "X-Title",
-                            "GramaVaxi"
+                            "https://translation.googleapis.com/language/translate/v2?key=$API_KEY"
                         )
 
                         .post(body)
+
+                        .addHeader(
+                            "Content-Type",
+                            "application/json"
+                        )
 
                         .build()
 
@@ -116,20 +81,17 @@ object KannadaTranslator {
                         val result =
                             JSONObject(responseBody)
 
-                        // ✅ Proper response parsing
                         result
-                            .getJSONArray("choices")
+                            .getJSONObject("data")
+                            .getJSONArray("translations")
                             .getJSONObject(0)
-                            .getJSONObject("message")
-                            .getString("content")
-                            .trim()
+                            .getString("translatedText")
                     }
 
             } catch (e: Exception) {
 
                 e.printStackTrace()
 
-                // fallback
                 text
             }
         }

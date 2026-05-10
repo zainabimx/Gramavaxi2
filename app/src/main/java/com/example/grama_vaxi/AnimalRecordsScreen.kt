@@ -512,6 +512,25 @@ fun AnimalRecordCard(
 
                     Text(
 
+                        if (isKannada)
+                            "ಡಿಜಿಟಲ್ ಆರೋಗ್ಯ ಕಾರ್ಡ್"
+                        else
+                            "DIGITAL HEALTH CARD",
+
+                        fontSize = 11.sp,
+
+                        fontWeight =
+                            FontWeight.Bold,
+
+                        color = Color.Gray
+                    )
+
+                    Spacer(
+                        modifier = Modifier.height(6.dp)
+                    )
+
+                    Text(
+
                         translatedAnimalName.uppercase(),
 
                         fontWeight =
@@ -646,21 +665,6 @@ fun AnimalRecordCard(
                     Modifier.height(12.dp)
                 )
 
-                Text(
-
-                    if (isKannada)
-                        "ಡಿಜಿಟಲ್ ಆರೋಗ್ಯ ಕಾರ್ಡ್"
-                    else
-                        "DIGITAL HEALTH CARD",
-
-                    fontSize = 11.sp,
-
-                    fontWeight =
-                        FontWeight.Bold,
-
-                    color = Color.Gray
-                )
-
                 Column(
 
                     modifier = Modifier
@@ -717,7 +721,6 @@ fun AnimalRecordCard(
         }
     }
 }
-
 @Composable
 fun VaccinationAlertBox(
 

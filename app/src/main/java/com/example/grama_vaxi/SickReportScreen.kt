@@ -601,7 +601,7 @@ fun SickReportScreen(
                         if (isKannada)
                             "ವರದಿ ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ"
                         else
-                            "Report Sent Successfully",
+                            "Emergency Report Submitted",
 
                         fontWeight = FontWeight.Bold,
 
