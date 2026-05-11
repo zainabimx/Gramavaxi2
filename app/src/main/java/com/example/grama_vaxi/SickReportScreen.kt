@@ -626,65 +626,49 @@ fun SickReportScreen(
                         modifier = Modifier.height(24.dp)
                     )
 
-                    if (aiAdvice.isNotEmpty()) {
-
-                        Text(
-
-                            if (isKannada)
-                                "AI ಸಲಹೆ:"
-                            else
-                                "AI Advice:",
-
-                            fontWeight = FontWeight.Bold,
-
-                            color = Color(0xFF1565C0)
-                        )
-
-                        Spacer(
-                            modifier = Modifier.height(8.dp)
-                        )
-
-                        Card(
-
-                            colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFE3F2FD)
-                            ),
-
-                            shape = RoundedCornerShape(16.dp),
-
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-
-                            Text(
-
-                                aiAdvice,
-
-                                modifier = Modifier.padding(16.dp),
-
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
 
                     Spacer(
                         modifier = Modifier.height(30.dp)
                     )
 
-                    OutlinedButton(
+                    Button(
 
                         onClick = onBackClick,
 
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp)
+                            .height(54.dp),
+
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF2E7D32)
+                        ),
+
+                        shape = RoundedCornerShape(14.dp)
                     ) {
+
+                        Icon(
+
+                            Icons.Default.Home,
+
+                            contentDescription = null,
+
+                            tint = Color.White
+                        )
+
+                        Spacer(
+                            modifier = Modifier.width(8.dp)
+                        )
 
                         Text(
 
                             if (isKannada)
-                                "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ"
+                                "ಮುಖಪುಟಕ್ಕೆ ಹಿಂತಿರುಗಿ"
                             else
-                                "Return to Dashboard"
+                                "Return to Home Screen",
+
+                            color = Color.White,
+
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }

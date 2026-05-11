@@ -16,7 +16,7 @@ object GramaVaxiAI {
 
     // 🔐 OPENROUTER API KEY
     private const val API_KEY =
-        "API_KEY"
+        "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"
 
     // ✅ STABLE CLIENT
     private val client =

@@ -9,10 +9,10 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 
-object KannadaTranslator {
+object KannadaTranslator { 
 
     private const val API_KEY =
-        "TRANS"
+        "AIzaSyAEzkV4IEBwMewjrtSEUrpBKsY-3vlfsjY"
 
     private val client =
         OkHttpClient()
